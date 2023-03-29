@@ -52,7 +52,7 @@ void listIter(char *inputPath, int value, int commander) // commander chooses wh
             snprintf(filePath, 512, "%s/%s", inputPath, entry->d_name);
             if (lstat(filePath, &statbuf) == 0)
             {
-                if (statbuf.st_size < value && (S_ISREG(statbuf.st_mode) || S_ISDIR(statbuf.st_mode)) && commander == 1)
+                if (statbuf.st_size < value && !S_ISDIR(statbuf.st_mode) && commander == 1)
                 {
                     printf("%s\n", filePath);
                 }
@@ -72,7 +72,7 @@ void listRec(char *inputPath, int value, int commander) // commander chooses whe
     struct dirent *entry = NULL;
     char filePath[512];
     struct stat statbuf;
-    //printf("%s\n", inputPath);
+    // printf("%s\n", inputPath);
     dir = opendir(inputPath);
     if (dir == NULL)
     {
@@ -83,12 +83,13 @@ void listRec(char *inputPath, int value, int commander) // commander chooses whe
     {
         if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0)
         {
-            snprintf(filePath, 512, "%s/%s", inputPath, entry->d_name);  
+            snprintf(filePath, 512, "%s/%s", inputPath, entry->d_name);
             if (lstat(filePath, &statbuf) == 0)
             {
-                if (S_ISDIR(statbuf.st_mode)){
-                    printf("%s\n",filePath);
-                    listRec(filePath,value,commander);
+                if (S_ISDIR(statbuf.st_mode))
+                {
+                    printf("%s\n", filePath);
+                    listRec(filePath, value, commander);
                 }
                 if (statbuf.st_size < value && S_ISREG(statbuf.st_mode) && commander == 1)
                 {
@@ -98,7 +99,6 @@ void listRec(char *inputPath, int value, int commander) // commander chooses whe
                 {
                     printf("%s\n", filePath);
                 }
-                
             }
         }
     }
@@ -112,6 +112,16 @@ void check_size_and_path(char *first, char *second)
     char *inputPath = parseForPath(second); // saves the path that the user haad on inpuT
     printf("SUCCESS\n");                    // how can i differentiate whether an error appeared?
     listIter(inputPath, value, 1);
+    free(inputPath);
+}
+
+void check_size_and_pathREC(char *first, char *second)
+{
+
+    long int value = parseForSize(first);   // contains the value after size_smaller
+    char *inputPath = parseForPath(second); // saves the path that the user haad on inpuT
+    printf("SUCCESS\n");                    // how can i differentiate whether an error appeared?
+    listRec(inputPath, value, 1);
     free(inputPath);
 }
 
@@ -141,11 +151,12 @@ int main(int argc, char **argv)
                 if (strncmp(argv[3], "path=", 5) == 0)
                 {
                     char *inputPath = parseForPath(argv[3]);
-                    //printf("CALLER: %s\n", inputPath);
+                    // printf("CALLER: %s\n", inputPath);
                     printf("SUCCESS\n"); ////HARDCODED
                     listRec(inputPath, 0, 0);
                     free(inputPath);
                 }
+                
             }
         }
     }
