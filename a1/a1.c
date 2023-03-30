@@ -8,6 +8,7 @@
 
 char *parseForPath(char *input) // we assume that input is looking like = "path=........";
 {
+    //printf("%s", input);
     char *output = calloc(strlen(input) - 5, sizeof(char));
     int j = 0;
     for (int i = 5; i < strlen(input); i++)
@@ -20,6 +21,8 @@ char *parseForPath(char *input) // we assume that input is looking like = "path=
 
 long int parseForSize(char *input)
 { // we assume that input looks like = "size_smaller=......"
+    //printf("%s", input);
+
     long int returned;
     char valueAsChar[255];
     int j = 0;
@@ -86,9 +89,14 @@ void listRec(char *inputPath, int value, int commander) // commander chooses whe
             snprintf(filePath, 512, "%s/%s", inputPath, entry->d_name);
             if (lstat(filePath, &statbuf) == 0)
             {
-                if (S_ISDIR(statbuf.st_mode))
+                
+                if (S_ISDIR(statbuf.st_mode)&&commander==1)
                 {
-                    printf("%s\n", filePath);
+                    //printf("%s\n", filePath);
+                    listRec(filePath, value, commander);
+                }
+                if (S_ISDIR(statbuf.st_mode) && commander == 0){
+                    printf("%s\n",filePath);
                     listRec(filePath, value, commander);
                 }
                 if (statbuf.st_size < value && S_ISREG(statbuf.st_mode) && commander == 1)
@@ -117,7 +125,6 @@ void check_size_and_path(char *first, char *second)
 
 void check_size_and_pathREC(char *first, char *second)
 {
-
     long int value = parseForSize(first);   // contains the value after size_smaller
     char *inputPath = parseForPath(second); // saves the path that the user haad on inpuT
     printf("SUCCESS\n");                    // how can i differentiate whether an error appeared?
@@ -126,7 +133,8 @@ void check_size_and_pathREC(char *first, char *second)
 }
 
 int main(int argc, char **argv)
-{
+{   
+    //printf("ARGC:%d", argc);
     if (argc >= 2)
     {
         if (strcmp(argv[1], "variant") == 0)
@@ -156,7 +164,13 @@ int main(int argc, char **argv)
                     listRec(inputPath, 0, 0);
                     free(inputPath);
                 }
-                
+                if (argc >= 4)
+                {
+                    if (strncmp(argv[3], "size_smaller=", 13) == 0 && strncmp(argv[4], "path=", 5) == 0)
+                    {
+                        check_size_and_pathREC(argv[3], argv[4]);
+                    }
+                }
             }
         }
     }
