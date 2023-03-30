@@ -6,6 +6,19 @@
 #include <unistd.h>
 #include <dirent.h>
 
+int convertPermissions(char *permissions)
+{
+    int value = 0;
+    for (int i = 0; i < 9; i++)
+    {
+        if (permissions[i] == 'r' || permissions[i] == 'w' || permissions[i] == 'x')
+        {
+            value |= 1 << (8 - i);
+        }
+    }
+    return value;
+}
+
 char *parseForPath(char *input) // we assume that input is looking like = "path=........";
 {
     // printf("%s", input);
@@ -35,7 +48,19 @@ long int parseForSize(char *input)
     return returned;
 }
 
-void listIter(char *inputPath, int value, int commander) // commander chooses whether it searches for files with size < value or not
+char *parseForPerm(char *input)
+{
+    char *value = (char *)calloc(256, sizeof(char));
+    int j = 0;
+    for (int i = 12; i < strlen(input); i++)
+    {
+        value[j] = input[i];
+        j++;
+    }
+    return value;
+}
+
+void listIter(char *inputPath, int value, int commander, char *permissionPath) // commander chooses whether it searches for files with size < value or not
 {
     DIR *dir = NULL;
     struct dirent *entry = NULL;
@@ -61,7 +86,14 @@ void listIter(char *inputPath, int value, int commander) // commander chooses wh
                 }
                 if ((S_ISREG(statbuf.st_mode) || S_ISDIR(statbuf.st_mode)) && commander == 0)
                 {
-                    printf("%s\n", filePath);
+                    if (permissionPath == NULL)
+                    {
+                        printf("%s\n", filePath);
+                    }
+                    else if ((statbuf.st_mode & 0777) == convertPermissions(permissionPath))
+                    {
+                        printf("%s\n", filePath);
+                    }
                 }
             }
         }
@@ -120,7 +152,7 @@ void check_size_and_path(char *first, char *second)
     long int value = parseForSize(first);   // contains the value after size_smaller
     char *inputPath = parseForPath(second); // saves the path that the user haad on inpuT
     printf("SUCCESS\n");                    // how can i differentiate whether an error appeared?
-    listIter(inputPath, value, 1);
+    listIter(inputPath, value, 1,NULL);
     free(inputPath);
 }
 
@@ -135,7 +167,7 @@ void check_size_and_pathREC(char *first, char *second)
 
 int main(int argc, char **argv)
 {
-    int variant = -1, path = -1, recursive = -1, size_smaller = -1;
+    int variant = -1, path = -1, recursive = -1, size_smaller = -1, permissions = -1;
     for (int i = 1; i < argc; i++)
     {
         if (argv[i] != NULL && strcmp(argv[i], "variant") == 0)
@@ -155,10 +187,10 @@ int main(int argc, char **argv)
         {
             recursive = i;
         }
-        // if (strncmp(argv[i], "permissions=", 12) == 0)
-        // {
-        //     permissions = i;
-        // }
+        if (strncmp(argv[i], "permissions=", 12) == 0)
+        {
+            permissions = i;
+        }
     }
     if (argc >= 2)
     {
@@ -170,16 +202,27 @@ int main(int argc, char **argv)
         {
             if (recursive == -1)
             {
-                if (size_smaller == -1)
+                if (size_smaller == -1 && permissions == -1)
                 {
                     char *inputPath = parseForPath(argv[path]);
                     printf("SUCCESS\n"); ////HARDCODED
-                    listIter(inputPath, 0, 0);
+                    listIter(inputPath, 0, 0,NULL);
                     free(inputPath);
                 }
-                else
+                else if(size_smaller != -1)
                 {
                     check_size_and_path(argv[size_smaller], argv[path]);
+                }
+
+                if (permissions != -1 && size_smaller == -1 )
+                {   //printf("INPUT -> %s\n", argv[permissions]);
+                    char *permissionsString = parseForPerm(argv[permissions]);
+                    //printf("CONVERTED -> %s\n", argv[permissions]);
+                    char *inputPath = parseForPath(argv[path]);
+                    printf("SUCCESS\n");
+                    listIter(inputPath, 0, 0, permissionsString);
+                    free(permissionsString);
+                    free(inputPath);
                 }
             }
             else
