@@ -8,7 +8,7 @@
 
 char *parseForPath(char *input) // we assume that input is looking like = "path=........";
 {
-    //printf("%s", input);
+    // printf("%s", input);
     char *output = calloc(strlen(input) - 5, sizeof(char));
     int j = 0;
     for (int i = 5; i < strlen(input); i++)
@@ -21,7 +21,7 @@ char *parseForPath(char *input) // we assume that input is looking like = "path=
 
 long int parseForSize(char *input)
 { // we assume that input looks like = "size_smaller=......"
-    //printf("%s", input);
+    // printf("%s", input);
 
     long int returned;
     char valueAsChar[255];
@@ -89,14 +89,15 @@ void listRec(char *inputPath, int value, int commander) // commander chooses whe
             snprintf(filePath, 512, "%s/%s", inputPath, entry->d_name);
             if (lstat(filePath, &statbuf) == 0)
             {
-                
-                if (S_ISDIR(statbuf.st_mode)&&commander==1)
+
+                if (S_ISDIR(statbuf.st_mode) && commander == 1)
                 {
-                    //printf("%s\n", filePath);
+                    // printf("%s\n", filePath);
                     listRec(filePath, value, commander);
                 }
-                if (S_ISDIR(statbuf.st_mode) && commander == 0){
-                    printf("%s\n",filePath);
+                if (S_ISDIR(statbuf.st_mode) && commander == 0)
+                {
+                    printf("%s\n", filePath);
                     listRec(filePath, value, commander);
                 }
                 if (statbuf.st_size < value && S_ISREG(statbuf.st_mode) && commander == 1)
@@ -133,43 +134,67 @@ void check_size_and_pathREC(char *first, char *second)
 }
 
 int main(int argc, char **argv)
-{   
-    //printf("ARGC:%d", argc);
+{
+    int variant = -1, path = -1, recursive = -1, size_smaller = -1;
+    for (int i = 1; i < argc; i++)
+    {
+        if (argv[i] != NULL && strcmp(argv[i], "variant") == 0)
+        {
+            variant = i;
+            continue;
+        }
+        if (strncmp(argv[i], "path=", 5) == 0)
+        {
+            path = i;
+        }
+        if (strncmp(argv[i], "size_smaller=", 13) == 0)
+        {
+            size_smaller = i;
+        }
+        if (strncmp(argv[i], "recursive", 9) == 0)
+        {
+            recursive = i;
+        }
+        // if (strncmp(argv[i], "permissions=", 12) == 0)
+        // {
+        //     permissions = i;
+        // }
+    }
     if (argc >= 2)
     {
-        if (strcmp(argv[1], "variant") == 0)
+        if (variant != -1)
         {
             printf("99475\n");
         }
         if (strcmp(argv[1], "list") == 0)
         {
-            if (strncmp(argv[2], "path=", 5) == 0)
+            if (recursive == -1)
             {
-                char *inputPath = parseForPath(argv[2]);
-                printf("SUCCESS\n"); ////HARDCODED
-                listIter(inputPath, 0, 0);
-                free(inputPath);
-            }
-            if (strncmp(argv[2], "size_smaller=", 13) == 0 && strncmp(argv[3], "path=", 5) == 0)
-            {
-                check_size_and_path(argv[2], argv[3]);
-            }
-            if (strcmp(argv[2], "recursive") == 0)
-            {
-                if (strncmp(argv[3], "path=", 5) == 0)
+                if (size_smaller == -1)
                 {
-                    char *inputPath = parseForPath(argv[3]);
+                    char *inputPath = parseForPath(argv[path]);
+                    printf("SUCCESS\n"); ////HARDCODED
+                    listIter(inputPath, 0, 0);
+                    free(inputPath);
+                }
+                else
+                {
+                    check_size_and_path(argv[size_smaller], argv[path]);
+                }
+            }
+            else
+            {
+                if (size_smaller == -1)
+                {
+                    char *inputPath = parseForPath(argv[path]);
                     // printf("CALLER: %s\n", inputPath);
                     printf("SUCCESS\n"); ////HARDCODED
                     listRec(inputPath, 0, 0);
                     free(inputPath);
                 }
-                if (argc >= 4)
+                else
                 {
-                    if (strncmp(argv[3], "size_smaller=", 13) == 0 && strncmp(argv[4], "path=", 5) == 0)
-                    {
-                        check_size_and_pathREC(argv[3], argv[4]);
-                    }
+                    check_size_and_pathREC(argv[size_smaller], argv[path]);
                 }
             }
         }
