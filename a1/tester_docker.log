@@ -11,12 +11,12 @@ Testing recursive_listing_2...[1;32mOK[0m
 Testing recursive_listing_3...[1;32mOK[0m
 Testing recursive_listing_4...[1;32mOK[0m
 Testing recursive_listing_5...[1;32mOK[0m
-Testing permissions_1...[1;31mFAIL[0m
-Testing permissions_2...[1;31mFAIL[0m
-Testing permissions_3...[1;31mFAIL[0m
-Testing permissions_4...[1;31mFAIL[0m
-Testing permissions_5...[1;31mFAIL[0m
-Testing permissions_6...[1;31mFAIL[0m
+Testing permissions_1...[1;32mOK[0m
+Testing permissions_2...[1;32mOK[0m
+Testing permissions_3...[1;32mOK[0m
+Testing permissions_4...[1;32mOK[0m
+Testing permissions_5...[1;32mOK[0m
+Testing permissions_6...[1;32mOK[0m
 Testing size_smaller_1...[1;32mOK[0m
 Testing size_smaller_2...[1;32mOK[0m
 Testing size_smaller_3...[1;32mOK[0m
@@ -25,7 +25,7 @@ Testing size_smaller_5...[1;32mOK[0m
 Testing size_smaller_6...[1;32mOK[0m
 Testing parse_1...[1;31mFAIL[0m
 Testing parse_2...[1;31mFAIL[0m
-Testing parse_3...[1;31mFAIL[0m
+Testing parse_3...[1;32mOK[0m
 Testing parse_4...[1;31mFAIL[0m
 Testing parse_5...[1;31mFAIL[0m
 Testing parse_6...[1;31mFAIL[0m
@@ -65,5 +65,5 @@ Testing findall_5...[1;31mFAIL[0m
 Testing findall_6...[1;31mFAIL[0m
 Testing findall_7...[1;31mFAIL[0m
 Testing findall_8...[1;31mFAIL[0m
-Total score: 17 / 65
-Assignment grade: 26.15 / 100
+Total score: 24 / 65
+Assignment grade: 36.92 / 100

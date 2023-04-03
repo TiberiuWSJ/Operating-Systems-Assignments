@@ -5,6 +5,15 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <fcntl.h>
+
+typedef struct {
+    char  name[12];
+    int type;
+    int offset;
+    int size;
+
+}section_header;
 
 int convertPermissions(char *permissions)
 {
@@ -152,7 +161,7 @@ void check_size_and_path(char *first, char *second)
     long int value = parseForSize(first);   // contains the value after size_smaller
     char *inputPath = parseForPath(second); // saves the path that the user haad on inpuT
     printf("SUCCESS\n");                    // how can i differentiate whether an error appeared?
-    listIter(inputPath, value, 1,NULL);
+    listIter(inputPath, value, 1, NULL);
     free(inputPath);
 }
 
@@ -206,18 +215,18 @@ int main(int argc, char **argv)
                 {
                     char *inputPath = parseForPath(argv[path]);
                     printf("SUCCESS\n"); ////HARDCODED
-                    listIter(inputPath, 0, 0,NULL);
+                    listIter(inputPath, 0, 0, NULL);
                     free(inputPath);
                 }
-                else if(size_smaller != -1)
+                else if (size_smaller != -1)
                 {
                     check_size_and_path(argv[size_smaller], argv[path]);
                 }
 
-                if (permissions != -1 && size_smaller == -1 )
-                {   //printf("INPUT -> %s\n", argv[permissions]);
+                if (permissions != -1 && size_smaller == -1)
+                { // printf("INPUT -> %s\n", argv[permissions]);
                     char *permissionsString = parseForPerm(argv[permissions]);
-                    //printf("CONVERTED -> %s\n", argv[permissions]);
+                    // printf("CONVERTED -> %s\n", argv[permissions]);
                     char *inputPath = parseForPath(argv[path]);
                     printf("SUCCESS\n");
                     listIter(inputPath, 0, 0, permissionsString);
@@ -240,6 +249,60 @@ int main(int argc, char **argv)
                     check_size_and_pathREC(argv[size_smaller], argv[path]);
                 }
             }
+        }
+        if (strcmp(argv[1], "parse") == 0)
+        {
+
+            int fd = open(parseForPath(argv[path]), O_RDONLY);
+            char magic;
+            int header_size;
+            int filesize;
+            int version;
+            int nr_of_sect;
+
+            filesize = lseek(fd, 0, SEEK_END);
+            lseek(fd, 0, SEEK_SET);
+            
+
+            lseek(fd, -1, SEEK_END);
+            read(fd, &magic, 1);
+            //printf("%c\n", magic);
+            lseek(fd, -3, SEEK_CUR);
+            read(fd, &header_size,2);
+            lseek(fd, filesize - header_size, SEEK_SET);
+            read(fd, &version, 1);
+            read(fd, &nr_of_sect, 1);
+
+
+            section_header*  headers = (section_header*)calloc(nr_of_sect, sizeof(section_header));
+            
+            for(int i = 0; i < nr_of_sect; i++){
+               
+                read(fd, &headers[i].name, 12);
+                read(fd, &headers[i].type, 2);
+                read(fd, &headers[i].offset, 4);
+                read(fd, &headers[i].size, 4);
+
+            }
+
+            //print phase
+            printf("SUCCESS\n");
+            printf("version=%d\n",version);
+            printf("nr_sections=%d\n",nr_of_sect);
+
+            for(int i = 0; i < nr_of_sect; i++){
+                printf("section");
+                printf("%d: ", i+1);
+                printf("%s ", headers[i].name);
+                printf("%d ", headers[i].type);
+                //printf("%d ", headers[i].offset);
+                printf("%d \n", headers[i].size);
+            }
+
+
+            
+            free(headers);
+            close(fd);
         }
     }
 
