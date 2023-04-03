@@ -23,16 +23,16 @@ Testing size_smaller_3...[1;32mOK[0m
 Testing size_smaller_4...[1;32mOK[0m
 Testing size_smaller_5...[1;32mOK[0m
 Testing size_smaller_6...[1;32mOK[0m
-Testing parse_1...[1;31mFAIL[0m
-Testing parse_2...[1;31mFAIL[0m
+Testing parse_1...[1;32mOK[0m
+Testing parse_2...[1;32mOK[0m
 Testing parse_3...[1;32mOK[0m
-Testing parse_4...[1;31mFAIL[0m
-Testing parse_5...[1;31mFAIL[0m
-Testing parse_6...[1;31mFAIL[0m
-Testing parse_7...[1;31mFAIL[0m
-Testing parse_8...[1;31mFAIL[0m
-Testing parse_9...[1;31mFAIL[0m
-Testing parse_10...[1;31mFAIL[0m
+Testing parse_4...[1;32mOK[0m
+Testing parse_5...[1;32mOK[0m
+Testing parse_6...[1;32mOK[0m
+Testing parse_7...[1;32mOK[0m
+Testing parse_8...[1;32mOK[0m
+Testing parse_9...[1;32mOK[0m
+Testing parse_10...[1;32mOK[0m
 Testing corrupted_1...[1;31mFAIL[0m
 Testing corrupted_2...[1;31mFAIL[0m
 Testing corrupted_3...[1;31mFAIL[0m
@@ -65,5 +65,5 @@ Testing findall_5...[1;31mFAIL[0m
 Testing findall_6...[1;31mFAIL[0m
 Testing findall_7...[1;31mFAIL[0m
 Testing findall_8...[1;31mFAIL[0m
-Total score: 24 / 65
-Assignment grade: 36.92 / 100
+Total score: 33 / 65
+Assignment grade: 50.77 / 100

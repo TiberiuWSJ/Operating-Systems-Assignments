@@ -8,7 +8,7 @@
 #include <fcntl.h>
 
 typedef struct {
-    char  name[12];
+    char  name[13];
     int type;
     int offset;
     int size;
@@ -254,7 +254,7 @@ int main(int argc, char **argv)
         {
 
             int fd = open(parseForPath(argv[path]), O_RDONLY);
-            char magic;
+            char magic[2];
             int header_size;
             int filesize;
             int version;
@@ -266,6 +266,7 @@ int main(int argc, char **argv)
 
             lseek(fd, -1, SEEK_END);
             read(fd, &magic, 1);
+            magic[1] = '\0';
             //printf("%c\n", magic);
             lseek(fd, -3, SEEK_CUR);
             read(fd, &header_size,2);
@@ -279,6 +280,7 @@ int main(int argc, char **argv)
             for(int i = 0; i < nr_of_sect; i++){
                
                 read(fd, &headers[i].name, 12);
+                headers[i].name[12] = '\0';
                 read(fd, &headers[i].type, 2);
                 read(fd, &headers[i].offset, 4);
                 read(fd, &headers[i].size, 4);
