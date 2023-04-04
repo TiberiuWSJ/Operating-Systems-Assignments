@@ -349,14 +349,18 @@ void findAll(char *inputPath)
                 {
                     findAll(filePath);
                 }
+
                 int no_of_sect = 0;
                 section_header *headers = parseSectionFileAux(filePath, &no_of_sect);
-                for(int i = 0; i < no_of_sect; i++){
-                    if(headers[i].type == 66){
+                for (int i = 0; i < no_of_sect; i++)
+                {
+                    if (headers[i].type == 66)
+                    {
                         printf("%s\n", filePath);
                         break;
                     }
                 }
+                free(headers);
             }
         }
     }
