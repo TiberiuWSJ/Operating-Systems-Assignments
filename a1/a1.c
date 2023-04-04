@@ -279,49 +279,63 @@ section_header *parseSectionFileAux(char *path, int *commander)
     lseek(fd, filesize - header_size, SEEK_SET);
     read(fd, &version, 1);
     read(fd, &nr_of_sect, 1);
+    int worked = 0;
+    section_header *headers;
 
-    section_header *headers = (section_header *)calloc(nr_of_sect, sizeof(section_header));
-    if (headers == NULL)
+    if (nr_of_sect != 0)
     {
-        perror("no allocation");
-        return NULL;
+        headers = (section_header *)calloc(nr_of_sect, sizeof(section_header));
+        if (headers == NULL)
+        {
+            perror("no allocation");
+            close(fd);
+            return NULL;
+        }
+        worked = 1;
     }
 
-    int check = 1;
-    for (int i = 0; i < nr_of_sect; i++)
+    if (worked == 1)
     {
+        int check = 1;
+        for (int i = 0; i < nr_of_sect; i++)
+        {
 
-        read(fd, &headers[i].name, 12);
-        headers[i].name[12] = '\0';
-        read(fd, &headers[i].type, 2);
-        read(fd, &headers[i].offset, 4);
-        read(fd, &headers[i].size, 4);
+            read(fd, &headers[i].name, 12);
+            headers[i].name[12] = '\0';
+            read(fd, &headers[i].type, 2);
+            read(fd, &headers[i].offset, 4);
+            read(fd, &headers[i].size, 4);
+        }
+
+        if (strcmp(magic, "E") != 0)
+        {
+
+            check = 0;
+        }
+        if (version < 31 || version > 63)
+        {
+
+            check = 0;
+        }
+        if (nr_of_sect < 2 || nr_of_sect > 17)
+        {
+
+            check = 0;
+        }
+
+        if (check == 0)
+        {   
+            free(headers);
+            return NULL;
+        }
+        *commander = nr_of_sect;
+        close(fd);
+        return headers;
+        
     }
-
-    if (strcmp(magic, "E") != 0)
-    {
-
-        check = 0;
-    }
-    if (version < 31 || version > 63)
-    {
-
-        check = 0;
-    }
-    if (nr_of_sect < 2 || nr_of_sect > 17)
-    {
-
-        check = 0;
-    }
-
-    if (check == 0)
-    {
-        return NULL;
-    }
-    *commander = nr_of_sect;
-    return headers;
     // free(headers);
     close(fd);
+    return NULL;
 }
 
 void findAll(char *inputPath)
