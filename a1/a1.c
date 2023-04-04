@@ -32,7 +32,7 @@ int convertPermissions(char *permissions)
 
 char *parseForPath(char *input) // we assume that input is looking like = "path=........";
 {
-   
+
     char *output = calloc(strlen(input) - 5, sizeof(char));
     int j = 0;
     for (int i = 5; i < strlen(input); i++)
@@ -176,7 +176,7 @@ void check_size_and_pathREC(char *first, char *second)
     free(inputPath);
 }
 
-void parseSectionFile(char *path)
+section_header *parseSectionFile(char *path, int commander)
 {
     int fd = open(path, O_RDONLY);
     char magic[2];
@@ -198,9 +198,10 @@ void parseSectionFile(char *path)
     read(fd, &nr_of_sect, 1);
 
     section_header *headers = (section_header *)calloc(nr_of_sect, sizeof(section_header));
-    if (headers == NULL){
+    if (headers == NULL)
+    {
         perror("no allocation");
-        return;
+        return NULL;
     }
 
     int check = 1;
@@ -236,7 +237,7 @@ void parseSectionFile(char *path)
     }
 
     // print phase
-    if (check == 1)
+    if (check == 1 && commander == 1)
     {
         printf("SUCCESS\n");
         printf("version=%d\n", version);
@@ -252,13 +253,14 @@ void parseSectionFile(char *path)
         }
     }
 
-    free(headers);
+    return headers;
+    // free(headers);
     close(fd);
 }
 
 int main(int argc, char **argv)
 {
-    int variant = -1, path = -1, recursive = -1, size_smaller = -1, permissions = -1;
+    int variant = -1, path = -1, recursive = -1, size_smaller = -1, permissions = -1, section = -1, line = -1;
     for (int i = 1; i < argc; i++)
     {
         if (argv[i] != NULL && strcmp(argv[i], "variant") == 0)
@@ -281,6 +283,14 @@ int main(int argc, char **argv)
         if (strncmp(argv[i], "permissions=", 12) == 0)
         {
             permissions = i;
+        }
+        if (strncmp(argv[i], "section=", 8) == 0)
+        {
+            section = i;
+        }
+        if (strncmp(argv[i], "line=", 5) == 0)
+        {
+            line = i;
         }
     }
     if (argc >= 2)
@@ -334,8 +344,71 @@ int main(int argc, char **argv)
         {
             char *filePath = parseForPath(argv[path]);
 
-            parseSectionFile(filePath);
+            free(parseSectionFile(filePath, 1));
             free(filePath);
+        }
+
+        if (strcmp(argv[1], "extract") == 0)
+        {
+            char *filePath = parseForPath(argv[path]);
+            int fd = open(filePath, O_RDONLY);
+            section_header *headers = parseSectionFile(filePath, 0);
+            free(filePath);
+            int sectionNr = 0, lineNr = 0;
+
+            char *output = calloc(strlen(argv[section]) - 8, sizeof(char));
+            int j = 0;
+            for (int i = 8; i < strlen(argv[section]); i++)
+            {
+                output[j] = argv[section][i];
+                j++;
+            }
+            sscanf(output, "%d", &sectionNr);
+            free(output);
+
+            char *out = calloc(strlen(argv[line]) - 5, sizeof(char));
+            j = 0;
+            for (int i = 5; i < strlen(argv[line]); i++)
+            {
+                out[j] = argv[line][i];
+                j++;
+            }
+            sscanf(out, "%d", &lineNr);
+            free(out);
+            lseek(fd, headers[sectionNr - 1].offset + headers[sectionNr - 1].size, SEEK_SET);
+
+            // we are at the end of the section right now
+            int counter = 0;
+            int seek = -1;
+            printf("SUCCESS\n");
+            while (counter != lineNr - 1)
+            {
+                char buff;
+                lseek(fd, seek, SEEK_CUR);
+                read(fd, &buff, 1);
+                lseek(fd, -seek - 1, SEEK_CUR);
+                if (buff == 0x0A)
+                {
+                    counter++;
+                }
+                seek--;
+            }
+            while (1)
+            {
+                char buff;
+                lseek(fd, seek, SEEK_CUR);
+                read(fd, &buff, 1);
+                printf("%c", buff);
+                lseek(fd, -seek - 1, SEEK_CUR);
+                if (buff == 0x0A)
+                {
+                    break;
+                }
+                seek--;
+            }
+
+            close(fd);
+            free(headers);
         }
     }
 
