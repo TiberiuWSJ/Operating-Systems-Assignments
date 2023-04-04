@@ -176,7 +176,7 @@ void check_size_and_pathREC(char *first, char *second)
     free(inputPath);
 }
 
-section_header *parseSectionFile(char *path, int commander)
+section_header *parseSectionFile(char *path, int *commander)
 {
     int fd = open(path, O_RDONLY);
     char magic[2];
@@ -237,7 +237,7 @@ section_header *parseSectionFile(char *path, int commander)
     }
 
     // print phase
-    if (check == 1 && commander == 1)
+    if (check == 1 && *commander == 1)
     {
         printf("SUCCESS\n");
         printf("version=%d\n", version);
@@ -253,9 +253,114 @@ section_header *parseSectionFile(char *path, int commander)
         }
     }
 
+    *commander = nr_of_sect;
     return headers;
     // free(headers);
     close(fd);
+}
+
+section_header *parseSectionFileAux(char *path, int *commander)
+{
+    int fd = open(path, O_RDONLY);
+    char magic[2];
+    int header_size = 0;
+    int filesize = 0;
+    int version = 0;
+    int nr_of_sect = 0;
+
+    filesize = lseek(fd, 0, SEEK_END);
+    lseek(fd, 0, SEEK_SET);
+
+    lseek(fd, -1, SEEK_END);
+    read(fd, &magic, 1);
+    magic[1] = '\0';
+    lseek(fd, -3, SEEK_CUR);
+    read(fd, &header_size, 2);
+    lseek(fd, filesize - header_size, SEEK_SET);
+    read(fd, &version, 1);
+    read(fd, &nr_of_sect, 1);
+
+    section_header *headers = (section_header *)calloc(nr_of_sect, sizeof(section_header));
+    if (headers == NULL)
+    {
+        perror("no allocation");
+        return NULL;
+    }
+
+    int check = 1;
+    for (int i = 0; i < nr_of_sect; i++)
+    {
+
+        read(fd, &headers[i].name, 12);
+        headers[i].name[12] = '\0';
+        read(fd, &headers[i].type, 2);
+        read(fd, &headers[i].offset, 4);
+        read(fd, &headers[i].size, 4);
+    }
+
+    if (strcmp(magic, "E") != 0)
+    {
+
+        check = 0;
+    }
+    if (version < 31 || version > 63)
+    {
+
+        check = 0;
+    }
+    if (nr_of_sect < 2 || nr_of_sect > 17)
+    {
+
+        check = 0;
+    }
+
+    if (check == 0)
+    {
+        return NULL;
+    }
+    *commander = nr_of_sect;
+    return headers;
+    // free(headers);
+    close(fd);
+}
+
+void findAll(char *inputPath)
+{
+    DIR *dir = NULL;
+    struct dirent *entry = NULL;
+    char filePath[512];
+    struct stat statbuf;
+    // printf("%s\n", inputPath);
+    dir = opendir(inputPath);
+    if (dir == NULL)
+    {
+        perror("Could not open directory");
+        return;
+    }
+    while ((entry = readdir(dir)) != NULL)
+    {
+        if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0)
+        {
+            snprintf(filePath, 512, "%s/%s", inputPath, entry->d_name);
+            if (lstat(filePath, &statbuf) == 0)
+            {
+
+                if (S_ISDIR(statbuf.st_mode))
+                {
+                    findAll(filePath);
+                }
+                int no_of_sect = 0;
+                section_header *headers = parseSectionFileAux(filePath, &no_of_sect);
+                for(int i = 0; i < no_of_sect; i++){
+                    if(headers[i].type == 66){
+                        printf("%s\n", filePath);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    closedir(dir);
 }
 
 int main(int argc, char **argv)
@@ -343,16 +448,17 @@ int main(int argc, char **argv)
         if (strcmp(argv[1], "parse") == 0)
         {
             char *filePath = parseForPath(argv[path]);
-
-            free(parseSectionFile(filePath, 1));
+            int one = 1;
+            free(parseSectionFile(filePath, &one));
             free(filePath);
         }
 
         if (strcmp(argv[1], "extract") == 0)
         {
+            int zero = 0;
             char *filePath = parseForPath(argv[path]);
             int fd = open(filePath, O_RDONLY);
-            section_header *headers = parseSectionFile(filePath, 0);
+            section_header *headers = parseSectionFile(filePath, &zero);
             free(filePath);
             int sectionNr = 0, lineNr = 0;
 
@@ -409,6 +515,14 @@ int main(int argc, char **argv)
 
             close(fd);
             free(headers);
+        }
+        if (strcmp(argv[1], "findall") == 0)
+        {
+
+            char *filePath = parseForPath(argv[path]);
+            printf("SUCCESS\n");
+            findAll(filePath);
+            free(filePath);
         }
     }
 
