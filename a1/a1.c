@@ -261,6 +261,7 @@ section_header *parseSectionFile(char *path, int *commander)
 
 section_header *parseSectionFileAux(char *path, int *commander)
 {
+    //printf("%s\n \n ", path);
     int fd = open(path, O_RDONLY);
     char magic[2];
     int header_size = 0;
@@ -303,20 +304,29 @@ section_header *parseSectionFileAux(char *path, int *commander)
             read(fd, &headers[i].name, 12);
             headers[i].name[12] = '\0';
             read(fd, &headers[i].type, 2);
+            if (headers[i].type != 34 && headers[i].type != 66 && headers[i].type != 88 && headers[i].type != 13 && headers[i].type != 54)
+            {
+               
+                check = 0;
+            }
             read(fd, &headers[i].offset, 4);
             read(fd, &headers[i].size, 4);
         }
+
+       // printf("%s\n", magic);
 
         if (strcmp(magic, "E") != 0)
         {
 
             check = 0;
         }
+        //printf("%d\n", version);
         if (version < 31 || version > 63)
         {
 
             check = 0;
         }
+        //printf("%d\n", nr_of_sect);
         if (nr_of_sect < 2 || nr_of_sect > 17)
         {
 
@@ -324,14 +334,13 @@ section_header *parseSectionFileAux(char *path, int *commander)
         }
 
         if (check == 0)
-        {   
+        {
             free(headers);
             return NULL;
         }
         *commander = nr_of_sect;
         close(fd);
         return headers;
-        
     }
     // free(headers);
     close(fd);
@@ -363,18 +372,20 @@ void findAll(char *inputPath)
                 {
                     findAll(filePath);
                 }
-
-                int no_of_sect = 0;
-                section_header *headers = parseSectionFileAux(filePath, &no_of_sect);
-                for (int i = 0; i < no_of_sect; i++)
+                if (S_ISREG(statbuf.st_mode))
                 {
-                    if (headers[i].type == 66)
+                    int no_of_sect = 0;
+                    section_header *headers = parseSectionFileAux(filePath, &no_of_sect);
+                    for (int i = 0; i < no_of_sect; i++)
                     {
-                        printf("%s\n", filePath);
-                        break;
+                        if (headers[i].type == 66)
+                        {
+                            printf("%s\n", filePath);
+                            break;
+                        }
                     }
+                    free(headers);
                 }
-                free(headers);
             }
         }
     }
