@@ -253,8 +253,9 @@ int main(int argc, char **argv)
         }
         if (strcmp(argv[1], "parse") == 0)
         {
-
-            int fd = open(parseForPath(argv[path]), O_RDONLY);
+            char* filePath = parseForPath(argv[path]);
+            int fd = open(filePath, O_RDONLY);
+            free(filePath);
             char magic[2];
             int header_size;
             int filesize;
