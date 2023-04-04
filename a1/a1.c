@@ -7,13 +7,14 @@
 #include <dirent.h>
 #include <fcntl.h>
 
-typedef struct {
-    char  name[13];
+typedef struct
+{
+    char name[13];
     int type;
     int offset;
     int size;
 
-}section_header;
+} section_header;
 
 int convertPermissions(char *permissions)
 {
@@ -262,47 +263,72 @@ int main(int argc, char **argv)
 
             filesize = lseek(fd, 0, SEEK_END);
             lseek(fd, 0, SEEK_SET);
-            
 
             lseek(fd, -1, SEEK_END);
             read(fd, &magic, 1);
             magic[1] = '\0';
-            //printf("%c\n", magic);
+            // printf("%c\n", magic);
             lseek(fd, -3, SEEK_CUR);
-            read(fd, &header_size,2);
+            read(fd, &header_size, 2);
             lseek(fd, filesize - header_size, SEEK_SET);
             read(fd, &version, 1);
             read(fd, &nr_of_sect, 1);
 
+            section_header *headers = (section_header *)calloc(nr_of_sect, sizeof(section_header));
+            int check = 1;
+            for (int i = 0; i < nr_of_sect; i++)
+            {
 
-            section_header*  headers = (section_header*)calloc(nr_of_sect, sizeof(section_header));
-            
-            for(int i = 0; i < nr_of_sect; i++){
-               
                 read(fd, &headers[i].name, 12);
                 headers[i].name[12] = '\0';
                 read(fd, &headers[i].type, 2);
+                if (headers[i].type != 34 && headers[i].type != 66 && headers[i].type != 88 && headers[i].type != 13 && headers[i].type != 54){
+                    printf("ERROR\nwrong sect_types\n");
+                    check = 0;
+                }
                 read(fd, &headers[i].offset, 4);
                 read(fd, &headers[i].size, 4);
-
             }
-
-            //print phase
-            printf("SUCCESS\n");
-            printf("version=%d\n",version);
-            printf("nr_sections=%d\n",nr_of_sect);
-
-            for(int i = 0; i < nr_of_sect; i++){
-                printf("section");
-                printf("%d: ", i+1);
-                printf("%s ", headers[i].name);
-                printf("%d ", headers[i].type);
-                //printf("%d ", headers[i].offset);
-                printf("%d \n", headers[i].size);
-            }
-
-
             
+
+            if (strcmp(magic, "E") != 0)
+            {
+                //perror("ERROR\nwrong magic\n");
+                printf("ERROR\nwrong magic\n");
+                check = 0;
+            }
+            if (version < 31 || version > 63)
+            {
+                printf("ERROR\nwrong version\n");   
+                //perror("ERROR\nwrong version");
+                check = 0;
+            }
+            if (nr_of_sect < 2 || nr_of_sect > 17)
+            {
+                printf("ERROR\nwrong sect_nr\n");
+                //perror("ERROR\nwrong sect_nr");
+                check = 0;
+            }
+        
+
+            // print phase
+            if (check == 1)
+            {
+                printf("SUCCESS\n");
+                printf("version=%d\n", version);
+                printf("nr_sections=%d\n", nr_of_sect);
+
+                for (int i = 0; i < nr_of_sect; i++)
+                {
+                    printf("section");
+                    printf("%d: ", i + 1);
+                    printf("%s ", headers[i].name);
+                    printf("%d ", headers[i].type);
+                    // printf("%d ", headers[i].offset);
+                    printf("%d \n", headers[i].size);
+                }
+            }
+
             free(headers);
             close(fd);
         }
