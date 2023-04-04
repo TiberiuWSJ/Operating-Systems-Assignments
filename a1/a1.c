@@ -9,6 +9,7 @@
 
 typedef struct
 {
+
     char name[13];
     int type;
     int offset;
@@ -31,7 +32,7 @@ int convertPermissions(char *permissions)
 
 char *parseForPath(char *input) // we assume that input is looking like = "path=........";
 {
-    // printf("%s", input);
+   
     char *output = calloc(strlen(input) - 5, sizeof(char));
     int j = 0;
     for (int i = 5; i < strlen(input); i++)
@@ -175,6 +176,86 @@ void check_size_and_pathREC(char *first, char *second)
     free(inputPath);
 }
 
+void parseSectionFile(char *path)
+{
+    int fd = open(path, O_RDONLY);
+    char magic[2];
+    int header_size = 0;
+    int filesize = 0;
+    int version = 0;
+    int nr_of_sect = 0;
+
+    filesize = lseek(fd, 0, SEEK_END);
+    lseek(fd, 0, SEEK_SET);
+
+    lseek(fd, -1, SEEK_END);
+    read(fd, &magic, 1);
+    magic[1] = '\0';
+    lseek(fd, -3, SEEK_CUR);
+    read(fd, &header_size, 2);
+    lseek(fd, filesize - header_size, SEEK_SET);
+    read(fd, &version, 1);
+    read(fd, &nr_of_sect, 1);
+
+    section_header *headers = (section_header *)calloc(nr_of_sect, sizeof(section_header));
+    if (headers == NULL){
+        perror("no allocation");
+        return;
+    }
+
+    int check = 1;
+    for (int i = 0; i < nr_of_sect; i++)
+    {
+
+        read(fd, &headers[i].name, 12);
+        headers[i].name[12] = '\0';
+        read(fd, &headers[i].type, 2);
+        if (headers[i].type != 34 && headers[i].type != 66 && headers[i].type != 88 && headers[i].type != 13 && headers[i].type != 54)
+        {
+            printf("ERROR\nwrong sect_types\n");
+            check = 0;
+        }
+        read(fd, &headers[i].offset, 4);
+        read(fd, &headers[i].size, 4);
+    }
+
+    if (strcmp(magic, "E") != 0)
+    {
+        printf("ERROR\nwrong magic\n");
+        check = 0;
+    }
+    if (version < 31 || version > 63)
+    {
+        printf("ERROR\nwrong version\n");
+        check = 0;
+    }
+    if (nr_of_sect < 2 || nr_of_sect > 17)
+    {
+        printf("ERROR\nwrong sect_nr\n");
+        check = 0;
+    }
+
+    // print phase
+    if (check == 1)
+    {
+        printf("SUCCESS\n");
+        printf("version=%d\n", version);
+        printf("nr_sections=%d\n", nr_of_sect);
+
+        for (int i = 0; i < nr_of_sect; i++)
+        {
+            printf("section");
+            printf("%d: ", i + 1);
+            printf("%s ", headers[i].name);
+            printf("%d ", headers[i].type);
+            printf("%d \n", headers[i].size);
+        }
+    }
+
+    free(headers);
+    close(fd);
+}
+
 int main(int argc, char **argv)
 {
     int variant = -1, path = -1, recursive = -1, size_smaller = -1, permissions = -1;
@@ -225,9 +306,8 @@ int main(int argc, char **argv)
                 }
 
                 if (permissions != -1 && size_smaller == -1)
-                { // printf("INPUT -> %s\n", argv[permissions]);
+                {
                     char *permissionsString = parseForPerm(argv[permissions]);
-                    // printf("CONVERTED -> %s\n", argv[permissions]);
                     char *inputPath = parseForPath(argv[path]);
                     printf("SUCCESS\n");
                     listIter(inputPath, 0, 0, permissionsString);
@@ -240,7 +320,6 @@ int main(int argc, char **argv)
                 if (size_smaller == -1)
                 {
                     char *inputPath = parseForPath(argv[path]);
-                    // printf("CALLER: %s\n", inputPath);
                     printf("SUCCESS\n"); ////HARDCODED
                     listRec(inputPath, 0, 0);
                     free(inputPath);
@@ -253,85 +332,10 @@ int main(int argc, char **argv)
         }
         if (strcmp(argv[1], "parse") == 0)
         {
-            char* filePath = parseForPath(argv[path]);
-            int fd = open(filePath, O_RDONLY);
+            char *filePath = parseForPath(argv[path]);
+
+            parseSectionFile(filePath);
             free(filePath);
-            char magic[2];
-            int header_size;
-            int filesize;
-            int version;
-            int nr_of_sect;
-
-            filesize = lseek(fd, 0, SEEK_END);
-            lseek(fd, 0, SEEK_SET);
-
-            lseek(fd, -1, SEEK_END);
-            read(fd, &magic, 1);
-            magic[1] = '\0';
-            // printf("%c\n", magic);
-            lseek(fd, -3, SEEK_CUR);
-            read(fd, &header_size, 2);
-            lseek(fd, filesize - header_size, SEEK_SET);
-            read(fd, &version, 1);
-            read(fd, &nr_of_sect, 1);
-
-            section_header *headers = (section_header *)calloc(nr_of_sect, sizeof(section_header));
-            int check = 1;
-            for (int i = 0; i < nr_of_sect; i++)
-            {
-
-                read(fd, &headers[i].name, 12);
-                headers[i].name[12] = '\0';
-                read(fd, &headers[i].type, 2);
-                if (headers[i].type != 34 && headers[i].type != 66 && headers[i].type != 88 && headers[i].type != 13 && headers[i].type != 54){
-                    printf("ERROR\nwrong sect_types\n");
-                    check = 0;
-                }
-                read(fd, &headers[i].offset, 4);
-                read(fd, &headers[i].size, 4);
-            }
-            
-
-            if (strcmp(magic, "E") != 0)
-            {
-                //perror("ERROR\nwrong magic\n");
-                printf("ERROR\nwrong magic\n");
-                check = 0;
-            }
-            if (version < 31 || version > 63)
-            {
-                printf("ERROR\nwrong version\n");   
-                //perror("ERROR\nwrong version");
-                check = 0;
-            }
-            if (nr_of_sect < 2 || nr_of_sect > 17)
-            {
-                printf("ERROR\nwrong sect_nr\n");
-                //perror("ERROR\nwrong sect_nr");
-                check = 0;
-            }
-        
-
-            // print phase
-            if (check == 1)
-            {
-                printf("SUCCESS\n");
-                printf("version=%d\n", version);
-                printf("nr_sections=%d\n", nr_of_sect);
-
-                for (int i = 0; i < nr_of_sect; i++)
-                {
-                    printf("section");
-                    printf("%d: ", i + 1);
-                    printf("%s ", headers[i].name);
-                    printf("%d ", headers[i].type);
-                    // printf("%d ", headers[i].offset);
-                    printf("%d \n", headers[i].size);
-                }
-            }
-
-            free(headers);
-            close(fd);
         }
     }
 
