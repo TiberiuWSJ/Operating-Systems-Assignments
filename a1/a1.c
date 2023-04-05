@@ -33,30 +33,15 @@ int convertPermissions(char *permissions)
 char *parseForPath(char *input) // we assume that input is looking like = "path=........";
 {
 
-    char *output = calloc(strlen(input) - 5, sizeof(char));
+    char *output = calloc(strlen(input) - 4, sizeof(char));
     int j = 0;
     for (int i = 5; i < strlen(input); i++)
     {
         output[j] = input[i];
         j++;
     }
+    output[j] = '\0';
     return output;
-}
-
-long int parseForSize(char *input)
-{ // we assume that input looks like = "size_smaller=......"
-    // printf("%s", input);
-
-    long int returned;
-    char valueAsChar[255];
-    int j = 0;
-    for (int i = 13; i < strlen(input); i++)
-    {
-        valueAsChar[j] = input[i];
-        j++;
-    }
-    sscanf(valueAsChar, "%ld", &returned);
-    return returned;
 }
 
 char *parseForPerm(char *input)
@@ -68,6 +53,7 @@ char *parseForPerm(char *input)
         value[j] = input[i];
         j++;
     }
+    value[j] = '\0';
     return value;
 }
 
@@ -75,20 +61,26 @@ void listIter(char *inputPath, int value, int commander, char *permissionPath) /
 {
     DIR *dir = NULL;
     struct dirent *entry = NULL;
-    char filePath[512];
+    char filePath[4096];
     struct stat statbuf;
-
+    static int show = 0;
     dir = opendir(inputPath);
     if (dir == NULL)
     {
-        perror("Could not open directory");
+
+        printf("ERROR\ninvalid directory path");
         return;
+    }
+    if (show == 0)
+    {
+        printf("SUCCESS\n");
+        show++;
     }
     while ((entry = readdir(dir)) != NULL)
     {
         if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0)
         {
-            snprintf(filePath, 512, "%s/%s", inputPath, entry->d_name);
+            snprintf(filePath, 4096, "%s/%s", inputPath, entry->d_name);
             if (lstat(filePath, &statbuf) == 0)
             {
                 if (statbuf.st_size < value && !S_ISDIR(statbuf.st_mode) && commander == 1)
@@ -118,12 +110,20 @@ void listRec(char *inputPath, int value, int commander) // commander chooses whe
     struct dirent *entry = NULL;
     char filePath[512];
     struct stat statbuf;
-    // printf("%s\n", inputPath);
+    static int show = 0;
+
     dir = opendir(inputPath);
     if (dir == NULL)
     {
-        perror("Could not open directory");
+
+        // perror("ERROR\ninvalid directory path");
+        printf("ERROR\ninvalid directory path");
         return;
+    }
+    if (show == 0)
+    {
+        printf("SUCCESS\n");
+        show++;
     }
     while ((entry = readdir(dir)) != NULL)
     {
@@ -143,7 +143,7 @@ void listRec(char *inputPath, int value, int commander) // commander chooses whe
                     printf("%s\n", filePath);
                     listRec(filePath, value, commander);
                 }
-                if (statbuf.st_size < value && S_ISREG(statbuf.st_mode) && commander == 1)
+                if (commander == 1 && statbuf.st_size < value && S_ISREG(statbuf.st_mode))
                 {
                     printf("%s\n", filePath);
                 }
@@ -160,19 +160,37 @@ void listRec(char *inputPath, int value, int commander) // commander chooses whe
 void check_size_and_path(char *first, char *second)
 {
 
-    long int value = parseForSize(first);   // contains the value after size_smaller
+    long int returned = 0;
+    char *valueAsChar = (char*)calloc(255, sizeof(char));
+    int j = 0;
+    for (int i = 13; i < strlen(first); i++)
+    {
+        valueAsChar[j] = first[i];
+        j++;
+    }
+    sscanf(valueAsChar, "%ld",&returned);
     char *inputPath = parseForPath(second); // saves the path that the user haad on inpuT
-    printf("SUCCESS\n");                    // how can i differentiate whether an error appeared?
-    listIter(inputPath, value, 1, NULL);
+
+    listIter(inputPath, returned, 1, NULL);
+    free(valueAsChar);
     free(inputPath);
 }
 
 void check_size_and_pathREC(char *first, char *second)
 {
-    long int value = parseForSize(first);   // contains the value after size_smaller
+    long int returned = 0;
+    char *valueAsChar = (char*)calloc(255, sizeof(char));
+    int j = 0;
+    for (int i = 13; i < strlen(first); i++)
+    {
+        valueAsChar[j] = first[i];
+        j++;
+    }
+    sscanf(valueAsChar, "%ld",&returned);
     char *inputPath = parseForPath(second); // saves the path that the user haad on inpuT
-    printf("SUCCESS\n");                    // how can i differentiate whether an error appeared?
-    listRec(inputPath, value, 1);
+
+    listRec(inputPath, returned, 1);
+    free(valueAsChar);
     free(inputPath);
 }
 
@@ -261,7 +279,7 @@ section_header *parseSectionFile(char *path, int *commander)
 
 section_header *parseSectionFileAux(char *path, int *commander)
 {
-    //printf("%s\n \n ", path);
+    // printf("%s\n \n ", path);
     int fd = open(path, O_RDONLY);
     char magic[2];
     int header_size = 0;
@@ -306,27 +324,27 @@ section_header *parseSectionFileAux(char *path, int *commander)
             read(fd, &headers[i].type, 2);
             if (headers[i].type != 34 && headers[i].type != 66 && headers[i].type != 88 && headers[i].type != 13 && headers[i].type != 54)
             {
-               
+
                 check = 0;
             }
             read(fd, &headers[i].offset, 4);
             read(fd, &headers[i].size, 4);
         }
 
-       // printf("%s\n", magic);
+        // printf("%s\n", magic);
 
         if (strcmp(magic, "E") != 0)
         {
 
             check = 0;
         }
-        //printf("%d\n", version);
+        // printf("%d\n", version);
         if (version < 31 || version > 63)
         {
 
             check = 0;
         }
-        //printf("%d\n", nr_of_sect);
+        // printf("%d\n", nr_of_sect);
         if (nr_of_sect < 2 || nr_of_sect > 17)
         {
 
@@ -353,7 +371,6 @@ void findAll(char *inputPath)
     struct dirent *entry = NULL;
     char filePath[512];
     struct stat statbuf;
-    // printf("%s\n", inputPath);
     dir = opendir(inputPath);
     if (dir == NULL)
     {
@@ -440,7 +457,6 @@ int main(int argc, char **argv)
                 if (size_smaller == -1 && permissions == -1)
                 {
                     char *inputPath = parseForPath(argv[path]);
-                    printf("SUCCESS\n"); ////HARDCODED
                     listIter(inputPath, 0, 0, NULL);
                     free(inputPath);
                 }
@@ -453,7 +469,6 @@ int main(int argc, char **argv)
                 {
                     char *permissionsString = parseForPerm(argv[permissions]);
                     char *inputPath = parseForPath(argv[path]);
-                    printf("SUCCESS\n");
                     listIter(inputPath, 0, 0, permissionsString);
                     free(permissionsString);
                     free(inputPath);
@@ -464,7 +479,7 @@ int main(int argc, char **argv)
                 if (size_smaller == -1)
                 {
                     char *inputPath = parseForPath(argv[path]);
-                    printf("SUCCESS\n"); ////HARDCODED
+                    // printf("SUCCESS\n"); ////HARDCODED
                     listRec(inputPath, 0, 0);
                     free(inputPath);
                 }
@@ -547,7 +562,6 @@ int main(int argc, char **argv)
         }
         if (strcmp(argv[1], "findall") == 0)
         {
-
             char *filePath = parseForPath(argv[path]);
             printf("SUCCESS\n");
             findAll(filePath);
