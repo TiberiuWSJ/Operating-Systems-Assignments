@@ -104,7 +104,7 @@ void listIter(char *inputPath, int value, int commander, char *permissionPath) /
     closedir(dir);
 }
 
-void listRec(char *inputPath, int value, int commander) // commander chooses whether it searches for files with size < value or not
+void listRec(char *inputPath, int value, int commander, char *permissionsPath) // commander chooses whether it searches for files with size < value or not
 {
     DIR *dir = NULL;
     struct dirent *entry = NULL;
@@ -132,24 +132,49 @@ void listRec(char *inputPath, int value, int commander) // commander chooses whe
             snprintf(filePath, 512, "%s/%s", inputPath, entry->d_name);
             if (lstat(filePath, &statbuf) == 0)
             {
-
-                if (S_ISDIR(statbuf.st_mode) && commander == 1)
+                if (commander == 0)
                 {
-                    // printf("%s\n", filePath);
-                    listRec(filePath, value, commander);
+                    if (permissionsPath == NULL)
+                    {
+                        if (S_ISDIR(statbuf.st_mode))
+                        {
+                            printf("%s\n", filePath);
+                            listRec(filePath, value, commander, permissionsPath);
+                        }
+                        if (S_ISREG(statbuf.st_mode))
+                        {
+                            printf("%s\n", filePath);
+                        }
+                    }
+                    else
+                    {
+                        if (S_ISDIR(statbuf.st_mode))
+                        {
+                            if ((statbuf.st_mode & 0777) == convertPermissions(permissionsPath))
+                            {
+                                printf("%s\n", filePath);
+                            }
+                            listRec(filePath, value, commander, permissionsPath);
+                        }
+                        if (S_ISREG(statbuf.st_mode))
+                        {
+                            if ((statbuf.st_mode & 0777) == convertPermissions(permissionsPath))
+                            {
+                                printf("%s\n", filePath);
+                            }
+                        }
+                    }
                 }
-                if (S_ISDIR(statbuf.st_mode) && commander == 0)
+                else
                 {
-                    printf("%s\n", filePath);
-                    listRec(filePath, value, commander);
-                }
-                if (commander == 1 && statbuf.st_size < value && S_ISREG(statbuf.st_mode))
-                {
-                    printf("%s\n", filePath);
-                }
-                if (S_ISREG(statbuf.st_mode) && commander == 0)
-                {
-                    printf("%s\n", filePath);
+                    if (S_ISDIR(statbuf.st_mode))
+                    {
+                        listRec(filePath, value, commander, permissionsPath);
+                    }
+                    if (S_ISREG(statbuf.st_mode) && statbuf.st_size < value)
+                    {
+                        printf("%s\n", filePath);
+                    }
                 }
             }
         }
@@ -161,14 +186,14 @@ void check_size_and_path(char *first, char *second)
 {
 
     long int returned = 0;
-    char *valueAsChar = (char*)calloc(255, sizeof(char));
+    char *valueAsChar = (char *)calloc(255, sizeof(char));
     int j = 0;
     for (int i = 13; i < strlen(first); i++)
     {
         valueAsChar[j] = first[i];
         j++;
     }
-    sscanf(valueAsChar, "%ld",&returned);
+    sscanf(valueAsChar, "%ld", &returned);
     char *inputPath = parseForPath(second); // saves the path that the user haad on inpuT
 
     listIter(inputPath, returned, 1, NULL);
@@ -179,17 +204,17 @@ void check_size_and_path(char *first, char *second)
 void check_size_and_pathREC(char *first, char *second)
 {
     long int returned = 0;
-    char *valueAsChar = (char*)calloc(255, sizeof(char));
+    char *valueAsChar = (char *)calloc(255, sizeof(char));
     int j = 0;
     for (int i = 13; i < strlen(first); i++)
     {
         valueAsChar[j] = first[i];
         j++;
     }
-    sscanf(valueAsChar, "%ld",&returned);
+    sscanf(valueAsChar, "%ld", &returned);
     char *inputPath = parseForPath(second); // saves the path that the user haad on inpuT
 
-    listRec(inputPath, returned, 1);
+    listRec(inputPath, returned, 1, NULL);
     free(valueAsChar);
     free(inputPath);
 }
@@ -476,16 +501,25 @@ int main(int argc, char **argv)
             }
             else
             {
-                if (size_smaller == -1)
+                if (size_smaller == -1 && permissions == -1)
                 {
                     char *inputPath = parseForPath(argv[path]);
                     // printf("SUCCESS\n"); ////HARDCODED
-                    listRec(inputPath, 0, 0);
+                    listRec(inputPath, 0, 0, NULL);
                     free(inputPath);
                 }
-                else
+                else if (size_smaller != -1)
                 {
                     check_size_and_pathREC(argv[size_smaller], argv[path]);
+                }
+
+                if (permissions != -1 && size_smaller == -1)
+                {
+                    char *permissionsString = parseForPerm(argv[permissions]);
+                    char *inputPath = parseForPath(argv[path]);
+                    listRec(inputPath, 0, 0, permissionsString);
+                    free(permissionsString);
+                    free(inputPath);
                 }
             }
         }
