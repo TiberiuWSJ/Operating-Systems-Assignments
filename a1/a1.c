@@ -436,7 +436,7 @@ void findAll(char *inputPath)
 
 int main(int argc, char **argv)
 {
-    int variant = -1, path = -1, recursive = -1, size_smaller = -1, permissions = -1, section = -1, line = -1;
+    int variant = -1, path = -1, recursive = -1, size_smaller = -1, permissions = -1, section = -1, line = -1, parse = -1, extract = -1, findall = -1, list = -1;
     for (int i = 1; i < argc; i++)
     {
         if (argv[i] != NULL && strcmp(argv[i], "variant") == 0)
@@ -468,6 +468,22 @@ int main(int argc, char **argv)
         {
             line = i;
         }
+        if (strcmp(argv[i], "parse") == 0)
+        {
+            parse = i;
+        }
+        if (strcmp(argv[i], "extract") == 0)
+        {
+            extract = i;
+        }
+        if (strcmp(argv[i], "findall") == 0)
+        {
+            findall = i;
+        }
+        if (strcmp(argv[i], "list") == 0)
+        {
+            list = i;
+        }
     }
     if (argc >= 2)
     {
@@ -475,9 +491,9 @@ int main(int argc, char **argv)
         {
             printf("99475\n");
         }
-        if (strcmp(argv[1], "list") == 0)
+        if (list != -1 && parse == -1 && extract == -1 && findall == -1)
         {
-            if (recursive == -1)
+            if (recursive == -1 )
             {
                 if (size_smaller == -1 && permissions == -1)
                 {
@@ -501,19 +517,19 @@ int main(int argc, char **argv)
             }
             else
             {
-                if (size_smaller == -1 && permissions == -1)
+                if (size_smaller == -1 && permissions == -1 )
                 {
                     char *inputPath = parseForPath(argv[path]);
                     // printf("SUCCESS\n"); ////HARDCODED
                     listRec(inputPath, 0, 0, NULL);
                     free(inputPath);
                 }
-                else if (size_smaller != -1)
+                else if (size_smaller != -1 )
                 {
                     check_size_and_pathREC(argv[size_smaller], argv[path]);
                 }
 
-                if (permissions != -1 && size_smaller == -1)
+                if (permissions != -1 )
                 {
                     char *permissionsString = parseForPerm(argv[permissions]);
                     char *inputPath = parseForPath(argv[path]);
@@ -523,15 +539,14 @@ int main(int argc, char **argv)
                 }
             }
         }
-        if (strcmp(argv[1], "parse") == 0)
+        else if (parse != -1 && extract == -1 && findall == -1)
         {
             char *filePath = parseForPath(argv[path]);
             int one = 1;
             free(parseSectionFile(filePath, &one));
             free(filePath);
         }
-
-        if (strcmp(argv[1], "extract") == 0)
+        else if (parse == -1 && extract != -1 && findall == -1)
         {
             int zero = 0;
             char *filePath = parseForPath(argv[path]);
@@ -594,7 +609,7 @@ int main(int argc, char **argv)
             close(fd);
             free(headers);
         }
-        if (strcmp(argv[1], "findall") == 0)
+        else if (parse == -1 && extract == -1 && findall != -1)
         {
             char *filePath = parseForPath(argv[path]);
             printf("SUCCESS\n");
