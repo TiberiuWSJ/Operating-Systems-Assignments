@@ -46,14 +46,22 @@ void *threadFn5(void *param)
 {
     TH_STRUCT *s = (TH_STRUCT *)param;
 
-    
-
-        info(BEGIN, 5, s->thread_no);
-        info(END, 5, s->thread_no);
-    
+    info(BEGIN, 5, s->thread_no);
+    info(END, 5, s->thread_no);
 
     return NULL;
 }
+
+void *threadFn3(void *param)
+{
+    TH_STRUCT *s = (TH_STRUCT *)param;
+
+    info(BEGIN, 3, s->thread_no);
+    info(END, 3, s->thread_no);
+
+    return NULL;
+}
+
 
 int main()
 {
@@ -63,6 +71,9 @@ int main()
 
     TH_STRUCT params5[45];
     pthread_t tid5[45];
+
+    TH_STRUCT params3[4];
+    pthread_t tid3[4];
 
     info(BEGIN, 1, 0);
 
@@ -96,6 +107,17 @@ int main()
         if (pid3 == 0)
         {
             info(BEGIN, 3, 0);
+
+            for (int i = 0; i < 4; i++)
+            {
+                params3[i].thread_no = i + 1;
+                pthread_create(&tid3[i], NULL, threadFn3, &params3[i]);
+            }
+
+            for (int i = 0; i < 4; i++)
+            {
+                pthread_join(tid3[i], NULL);
+            }
 
             info(END, 3, 0);
             exit(0);
