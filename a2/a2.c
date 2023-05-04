@@ -9,17 +9,33 @@
 
 typedef struct {
     int thread_no;
+    sem_t* sem1;
+    sem_t* sem2;
  } TH_STRUCT;
 
-sem_t sem1, sem2;
 
 
 void *threadFn(void* param){
     TH_STRUCT *s = (TH_STRUCT*)param;
+
+    if(s->thread_no == 2){
+        sem_wait(s->sem1);
+        info(BEGIN, 2, s->thread_no);
+        info(END, 2, s->thread_no);
+        sem_post(s->sem2);
+
+    }else if(s->thread_no == 3){
+        info(BEGIN, 2, s->thread_no);
+        sem_post(s->sem1);
+        sem_wait(s->sem2);
+        info(END, 2, s->thread_no);
+
+    }else{
+
     info(BEGIN, 2, s->thread_no);
-
-
     info(END, 2, s->thread_no);
+    }
+    
 
     return NULL;
 }
@@ -37,14 +53,24 @@ int main()
     {
         info(BEGIN, 2, 0);
     
+        sem_t sem1, sem2;
+        sem_init(&sem1,0,0);
+        sem_init(&sem2,0,0);
+    
         for(int i = 0; i < 5; i++){
             params[i].thread_no = i+1;
+            params[i].sem1 = &sem1;
+            params[i].sem2 = &sem2;
+             
             pthread_create(&tid[i], NULL, threadFn, &params[i]);
         }
 
         for(int i = 0; i < 5; i++){
             pthread_join(tid[i], NULL);
         }
+
+        sem_destroy(&sem1);
+        sem_destroy(&sem2);
 
         int pid3 = fork();
         if (pid3 == 0)
