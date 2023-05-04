@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <semaphore.h>
-
+#include <fcntl.h>
 typedef struct
 {
     int thread_no;
@@ -17,7 +17,6 @@ typedef struct
 void *threadFn(void *param)
 {
     TH_STRUCT *s = (TH_STRUCT *)param;
-
     if (s->thread_no == 2)
     {
         sem_wait(s->sem1);
@@ -32,6 +31,16 @@ void *threadFn(void *param)
         sem_wait(s->sem2);
         info(END, 2, s->thread_no);
     }
+    else if (s->thread_no == 5)
+    {
+        // sem_wait(s->sem1);
+        // sem_wait(x);
+        info(BEGIN, 2, s->thread_no);
+
+        info(END, 2, s->thread_no);
+        // sem_post(q);
+        // sem_post(s->sem2);
+    }
     else
     {
 
@@ -45,23 +54,38 @@ void *threadFn(void *param)
 void *threadFn5(void *param)
 {
     TH_STRUCT *s = (TH_STRUCT *)param;
-
+    sem_wait(s->sem1);
     info(BEGIN, 5, s->thread_no);
     info(END, 5, s->thread_no);
-
+    sem_post(s->sem1);
     return NULL;
 }
 
 void *threadFn3(void *param)
 {
     TH_STRUCT *s = (TH_STRUCT *)param;
+    if (s->thread_no == 3)
+    {
+        info(BEGIN, 3, s->thread_no);
+        info(END, 3, s->thread_no);
+    }
+    else if (s->thread_no == 4)
+    {
+        // sem_wait(s->sem2);
+        // sem_wait(q);
 
-    info(BEGIN, 3, s->thread_no);
-    info(END, 3, s->thread_no);
+        info(BEGIN, 3, s->thread_no);
+        info(END, 3, s->thread_no);
+        // sem_post(s->sem2);
+    }
+    else
+    {
+        info(BEGIN, 3, s->thread_no);
+        info(END, 3, s->thread_no);
+    }
 
     return NULL;
 }
-
 
 int main()
 {
@@ -83,14 +107,26 @@ int main()
         info(BEGIN, 2, 0);
 
         sem_t sem1, sem2;
+        sem_t third1, third2;
         sem_init(&sem1, 0, 0);
         sem_init(&sem2, 0, 0);
+        sem_init(&third1, 1, 0);
+        sem_init(&third2, 1, 0);
 
         for (int i = 0; i < 5; i++)
         {
             params[i].thread_no = i + 1;
-            params[i].sem1 = &sem1;
-            params[i].sem2 = &sem2;
+
+            if (i == 4)
+            {
+                params[i].sem1 = &third1;
+                params[i].sem2 = &third2;
+            }
+            else
+            {
+                params[i].sem1 = &sem1;
+                params[i].sem2 = &sem2;
+            }
 
             pthread_create(&tid[i], NULL, threadFn, &params[i]);
         }
@@ -111,6 +147,8 @@ int main()
             for (int i = 0; i < 4; i++)
             {
                 params3[i].thread_no = i + 1;
+                params3[i].sem1 = &third1;
+                params3[i].sem2 = &third2;
                 pthread_create(&tid3[i], NULL, threadFn3, &params3[i]);
             }
 
@@ -135,11 +173,13 @@ int main()
         if (pid5 == 0)
         {
             info(BEGIN, 5, 0);
+            sem_t sem5;
+            sem_init(&sem5, 0, 4);
 
             for (int i = 0; i < 45; i++)
             {
                 params5[i].thread_no = i + 1;
-                params5[i].sem1 = &sem1;
+                params5[i].sem1 = &sem5;
                 params5[i].sem2 = &sem2;
 
                 pthread_create(&tid5[i], NULL, threadFn5, &params5[i]);
