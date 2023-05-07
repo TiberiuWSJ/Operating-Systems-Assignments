@@ -19,7 +19,7 @@ pthread_cond_t cond3 = PTHREAD_COND_INITIALIZER;
 
 int running_threads = 0;
 int flag = 0;
-int g=0;
+int g = 0;
 int ended = 0;
 typedef struct
 {
@@ -206,7 +206,6 @@ void *threadFn5(void *param)
     running_threads++;
     flag1++;
     pthread_mutex_unlock(&lock);
-   
 
     if (s->thread_no == 15)
     {
@@ -238,18 +237,18 @@ void *threadFn5(void *param)
     pthread_mutex_unlock(&lock);
 
     pthread_mutex_lock(&lastLock);
-    
-    while (flag1 >= 41 && started == 0) 
+
+    while (flag1 >= 41 && started == 0)
     {
         printf("%d a intrat pe ultimele \n", s->thread_no);
         printf("flag1: %d\n", flag1);
-       
+
         pthread_cond_wait(&cond3, &lastLock);
-       
+
         break;
     }
-     pthread_mutex_unlock(&lastLock);
-    
+    pthread_mutex_unlock(&lastLock);
+
     pthread_mutex_lock(&lock1);
     while (was15 != 0 && s->thread_no != 15 && started == 1 && ended == 0)
     {
@@ -349,6 +348,10 @@ int main()
             {
                 pthread_join(tid3[i], NULL);
             }
+            sem_destroy(&sem1);
+            sem_destroy(&sem2);
+            sem_destroy(&third1);
+            sem_destroy(&third2);
 
             info(END, 3, 0);
             exit(0);
@@ -381,6 +384,8 @@ int main()
 
             sem_destroy(&sem1);
             sem_destroy(&sem2);
+            sem_destroy(&third1);
+            sem_destroy(&third2);
         }
         int pid4 = fork();
         if (pid4 == 0)
@@ -450,6 +455,10 @@ int main()
     }
 
     wait(NULL);
+    sem_destroy(waitt);
+    sem_destroy(waity);
+    sem_destroy(x);
+    sem_destroy(q);
 
     info(END, 1, 0);
     return 0;
