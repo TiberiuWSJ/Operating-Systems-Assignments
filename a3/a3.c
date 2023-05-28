@@ -8,6 +8,38 @@
 #include <pthread.h>
 #include <sys/mman.h>
 
+char *addr;
+
+void write_shm(int reqPipe, int respPipe)
+{
+
+    unsigned int offset = -1;
+    read(reqPipe, &offset, sizeof(unsigned int));
+    unsigned int value = -1;
+    read(reqPipe, &value, sizeof(unsigned int));
+
+    unsigned int sum = offset + sizeof(value);
+
+    if (offset < 0 || offset > 1619935 || 1619935 < sum)
+    {
+        char sizeWrite = 12;
+        write(respPipe, &sizeWrite, 1);
+        write(respPipe, "WRITE_TO_SHM", sizeWrite);
+        char size = 5;
+        write(respPipe, &size, 1);
+        write(respPipe, "ERROR", size);
+    }
+
+    memcpy(&addr[offset], (void *)&value, sizeof(value));
+
+    char sizeWrite = 12;
+    write(respPipe, &sizeWrite, 1);
+    write(respPipe, "WRITE_TO_SHM", sizeWrite);
+    char size = 7;
+    write(respPipe, &size, 1);
+    write(respPipe, "SUCCESS", size);
+}
+
 int main(int argc, char **argv)
 {
 
@@ -36,19 +68,101 @@ int main(int argc, char **argv)
         printf("SUCCESS\n");
     }
 
+    // while (1)
+    // {
+    //     char dim1 = 0;
+
+    //     read(reqPipe, &dim1, 1);
+    //     char *contents = (char *)calloc(dim1 + 1, sizeof(char));
+    //     read(reqPipe, contents, dim1);
+    //     // write(respPipe, &dim1, 1);
+    //     // write(respPipe, contents, dim1);
+    //     // int dim = dim1 - '0';
+    //     // contents[dim] = '\0';
+
+    //     if (strncmp("VARIANT", contents, strlen("VARIANT")) == 0)
+    //     {
+    //         char variantDim = 7;
+    //         write(respPipe, &variantDim, 1);
+    //         write(respPipe, "VARIANT", variantDim);
+    //         char valueDim = 5;
+    //         write(respPipe, &valueDim, 1);
+    //         write(respPipe, "VALUE", valueDim);
+    //         unsigned int number = 99475;
+    //         write(respPipe, &number, 4);
+    //     }
+
+    //     if (strncmp("CREATE_SHM", contents, strlen("CREATE_SHM")) == 0)
+    //     {
+    //         unsigned int number = -1;
+    //         read(reqPipe, &number, sizeof(unsigned int));
+    //         int shmD = shm_open("/UZ5I4DNT", O_CREAT | O_RDWR, 0644);
+    //         if (shmD < 0)
+    //         {
+    //             char size = 5;
+    //             write(respPipe, &size, 1);
+    //             write(respPipe, "ERROR", size);
+    //         }
+    //         if (ftruncate(shmD, number) == -1)
+    //         {
+    //             char size = 5;
+    //             write(respPipe, &size, 1);
+    //             write(respPipe, "ERROR", size);
+    //         }
+    //         char *addr = (char *)mmap(NULL, number, PROT_READ | PROT_WRITE, MAP_SHARED, shmD, 0);
+    //         if (addr == MAP_FAILED)
+    //         {
+    //             char size = 5;
+    //             write(respPipe, &size, 1);
+    //             write(respPipe, "ERROR", size);
+    //         }
+    //         char sizeCreate = 10;
+    //         write(respPipe, &sizeCreate, 1);
+    //         write(respPipe, "CREATE_SHM", sizeCreate);
+
+    //         char size = 7;
+    //         write(respPipe, &size, 1);
+    //         write(respPipe, "SUCCESS", size);
+    //     }
+    //     if (strncmp("WRITE_TO_SHM", contents, strlen("WRITE_TO_SHM")) == 0)
+    //     {
+    //         write_shm(reqPipe, respPipe);
+    //     }
+
+    //     if (strncmp("EXIT", contents, dim1) == 0)
+    //     {
+    //         // char size = 5;
+    //         // write(respPipe, &size, 1);
+    //         // write(respPipe, "12345", size);
+    //         close(reqPipe);
+    //         close(respPipe);
+    //         unlink("RESP_PIPE_99475");
+    //         free(contents);
+    //         return 0;
+    //     }
+
+    //     else
+    //     {
+    //         return 0;
+    //         free(contents);
+    //     }
+
+    //     free(contents);
+    // }
+    shm_unlink("/UZ5I4DNT");
+
     while (1)
     {
         char dim1 = 0;
-
         read(reqPipe, &dim1, 1);
-        char *contents = (char *)calloc(dim1+1, sizeof(char));
+        char *contents = (char *)calloc(dim1 + 1, sizeof(char));
         read(reqPipe, contents, dim1);
-        // write(respPipe, &dim1, 1);
-        // write(respPipe, contents, dimInt);
-        //contents[dim1] = '\0';
+        printf("%s\n", contents);
+        
 
-        if (strncmp("VARIANT", contents, dim1) == 0)
+        if (strncmp("VARIANT", contents, strlen("VARIANT")) == 0)
         {
+            // Handle VARIANT command
             char variantDim = 7;
             write(respPipe, &variantDim, 1);
             write(respPipe, "VARIANT", variantDim);
@@ -58,9 +172,9 @@ int main(int argc, char **argv)
             unsigned int number = 99475;
             write(respPipe, &number, 4);
         }
-
-        else if (strncmp("CREATE_SHM", contents, dim1) == 0)
+        else if (strncmp("CREATE_SHM", contents, strlen("CREATE_SHM")) == 0)
         {
+            // Handle CREATE_SHM command
             unsigned int number = -1;
             read(reqPipe, &number, sizeof(unsigned int));
             int shmD = shm_open("/UZ5I4DNT", O_CREAT | O_RDWR, 0644);
@@ -69,19 +183,22 @@ int main(int argc, char **argv)
                 char size = 5;
                 write(respPipe, &size, 1);
                 write(respPipe, "ERROR", size);
+                shm_unlink("/UZ5I4DNT");
             }
             if (ftruncate(shmD, number) == -1)
             {
                 char size = 5;
                 write(respPipe, &size, 1);
                 write(respPipe, "ERROR", size);
+                shm_unlink("/UZ5I4DNT");
             }
-            void *addr = mmap(NULL, number, PROT_READ | PROT_WRITE, MAP_SHARED, shmD, 0);
+            char *addr = (char *)mmap(NULL, number, PROT_READ | PROT_WRITE, MAP_SHARED, shmD, 0);
             if (addr == MAP_FAILED)
             {
                 char size = 5;
                 write(respPipe, &size, 1);
                 write(respPipe, "ERROR", size);
+                
             }
             char sizeCreate = 10;
             write(respPipe, &sizeCreate, 1);
@@ -91,23 +208,39 @@ int main(int argc, char **argv)
             write(respPipe, &size, 1);
             write(respPipe, "SUCCESS", size);
         }
-
-        if (strncmp("EXIT", contents, dim1) == 0)
+        else if (strncmp(contents, "WRITE_TO_SHM", strlen("WRITE_TO_SHM")) == 0)
         {
-            // char size = 5;
-            // write(respPipe, &size, 1);
-            // write(respPipe, "12345", size);
+            
+            // Handle WRITE_TO_SHM command
+            write_shm(reqPipe, respPipe);
+        }
+        else if(strncmp("MAP_FILE", contents, strlen("MAP_FILE")) == 0){
+            char size = 0;
+            read(reqPipe, &size, 1);
+            char* file = (char*)calloc(size, sizeof(char));
+            int fd = open(file, O_RDONLY);
+            int size1 = lseek(fd, 0, SEEK_END);
+            mmap(NULL, size1, PROT_READ, MAP_PRIVATE, fd, 0);
+
+            write(respPipe, "MAP_FILE", strlen("MAP_FILE"));
+            write(respPipe, "SUCCESS", strlen("SUCCESS"));
+            
+        }
+        else if (strncmp("EXIT", contents, dim1) == 0)
+        {
+            // Handle EXIT command
             close(reqPipe);
             close(respPipe);
             unlink("RESP_PIPE_99475");
             free(contents);
+            shm_unlink("/UZ5I4DNT");
             return 0;
         }
-
         else
         {
-           return 0;
-           free(contents);
+            // Handle unrecognized command
+            free(contents);
+            return 0;
         }
 
         free(contents);
