@@ -38,14 +38,16 @@ int main(int argc, char **argv)
 
     while (1)
     {
-        char dim = 0;
+        char dim1 = 0;
 
-        read(reqPipe, &dim, 0);
-        int dimInt = atoi(&dim);
-        char *contents = (char *)calloc(dimInt + 1, sizeof(char));
-        read(reqPipe, &contents, dimInt);
-        contents[dimInt] = '\0';
-        if (strncmp("VARIANT", contents, dimInt) == 0)
+        read(reqPipe, &dim1, 1);
+        char *contents = (char *)calloc(dim1+1, sizeof(char));
+        read(reqPipe, contents, dim1);
+        // write(respPipe, &dim1, 1);
+        // write(respPipe, contents, dimInt);
+        //contents[dim1] = '\0';
+
+        if (strncmp("VARIANT", contents, dim1) == 0)
         {
             char variantDim = 7;
             write(respPipe, &variantDim, 1);
@@ -56,17 +58,59 @@ int main(int argc, char **argv)
             unsigned int number = 99475;
             write(respPipe, &number, 4);
         }
-        if (strncmp("EXIT", contents, dimInt) == 0)
+
+        else if (strncmp("CREATE_SHM", contents, dim1) == 0)
         {
+            unsigned int number = -1;
+            read(reqPipe, &number, sizeof(unsigned int));
+            int shmD = shm_open("/UZ5I4DNT", O_CREAT | O_RDWR, 0644);
+            if (shmD < 0)
+            {
+                char size = 5;
+                write(respPipe, &size, 1);
+                write(respPipe, "ERROR", size);
+            }
+            if (ftruncate(shmD, number) == -1)
+            {
+                char size = 5;
+                write(respPipe, &size, 1);
+                write(respPipe, "ERROR", size);
+            }
+            void *addr = mmap(NULL, number, PROT_READ | PROT_WRITE, MAP_SHARED, shmD, 0);
+            if (addr == MAP_FAILED)
+            {
+                char size = 5;
+                write(respPipe, &size, 1);
+                write(respPipe, "ERROR", size);
+            }
+            char sizeCreate = 10;
+            write(respPipe, &sizeCreate, 1);
+            write(respPipe, "CREATE_SHM", sizeCreate);
+
+            char size = 7;
+            write(respPipe, &size, 1);
+            write(respPipe, "SUCCESS", size);
+        }
+
+        if (strncmp("EXIT", contents, dim1) == 0)
+        {
+            // char size = 5;
+            // write(respPipe, &size, 1);
+            // write(respPipe, "12345", size);
             close(reqPipe);
             close(respPipe);
             unlink("RESP_PIPE_99475");
+            free(contents);
             return 0;
         }
-        else{
-            return 0;
+
+        else
+        {
+           return 0;
+           free(contents);
         }
-        
+
+        free(contents);
     }
 
     return 0;
