@@ -12,15 +12,36 @@ char *addr;
 
 void write_shm(int reqPipe, int respPipe)
 {
-
+    // printf("Aici\n");
     unsigned int offset = -1;
-    read(reqPipe, &offset, sizeof(unsigned int));
-    unsigned int value = -1;
-    read(reqPipe, &value, sizeof(unsigned int));
+    read(reqPipe, &offset, 4);
+    if (offset >= 0 && offset <= 1619935)
+    {
+        unsigned int value = 0;
+        read(reqPipe, &value, 4);
+        if (offset + sizeof(value) >= 0 && offset + sizeof(value) <= 1619935)
+        {
+            unsigned int *no_addr = (unsigned int *)(addr + offset);
+            *no_addr = value;
 
-    unsigned int sum = offset + sizeof(value);
-
-    if (offset < 0 || offset > 1619935 || 1619935 < sum)
+            char sizeWrite = 12;
+            write(respPipe, &sizeWrite, 1);
+            write(respPipe, "WRITE_TO_SHM", 12);
+            char size = 7;
+            write(respPipe, &size, 1);
+            write(respPipe, "SUCCESS", 7);
+        }
+        else
+        {
+            char sizeWrite = 12;
+            write(respPipe, &sizeWrite, 1);
+            write(respPipe, "WRITE_TO_SHM", 12);
+            char size = 5;
+            write(respPipe, &size, 1);
+            write(respPipe, "ERROR", 5);
+        }
+    }
+    else
     {
         char sizeWrite = 12;
         write(respPipe, &sizeWrite, 1);
@@ -30,14 +51,29 @@ void write_shm(int reqPipe, int respPipe)
         write(respPipe, "ERROR", size);
     }
 
-    memcpy(&addr[offset], (void *)&value, sizeof(value));
+    // unsigned int value = -1;
+    // read(reqPipe, &value, 4);
 
-    char sizeWrite = 12;
-    write(respPipe, &sizeWrite, 1);
-    write(respPipe, "WRITE_TO_SHM", sizeWrite);
-    char size = 7;
-    write(respPipe, &size, 1);
-    write(respPipe, "SUCCESS", size);
+    // unsigned int sum = offset + sizeof(value);
+
+    // if (offset < 0 || offset > 1619935 || 1619935 < sum)
+    // {
+    //     char sizeWrite = 12;
+    //     write(respPipe, &sizeWrite, 1);
+    //     write(respPipe, "WRITE_TO_SHM", sizeWrite);
+    //     char size = 5;
+    //     write(respPipe, &size, 1);
+    //     write(respPipe, "ERROR", size);
+    // }
+
+    // memcpy(&addr[offset], (void *)&value, sizeof(value));
+
+    // char sizeWrite = 12;
+    // write(respPipe, &sizeWrite, 1);
+    // write(respPipe, "WRITE_TO_SHM", sizeWrite);
+    // char size = 7;
+    // write(respPipe, &size, 1);
+    // write(respPipe, "SUCCESS", size);
 }
 
 int main(int argc, char **argv)
@@ -158,7 +194,6 @@ int main(int argc, char **argv)
         char *contents = (char *)calloc(dim1 + 1, sizeof(char));
         read(reqPipe, contents, dim1);
         printf("%s\n", contents);
-        
 
         if (strncmp("VARIANT", contents, strlen("VARIANT")) == 0)
         {
@@ -198,7 +233,6 @@ int main(int argc, char **argv)
                 char size = 5;
                 write(respPipe, &size, 1);
                 write(respPipe, "ERROR", size);
-                
             }
             char sizeCreate = 10;
             write(respPipe, &sizeCreate, 1);
@@ -208,23 +242,23 @@ int main(int argc, char **argv)
             write(respPipe, &size, 1);
             write(respPipe, "SUCCESS", size);
         }
-        else if (strncmp(contents, "WRITE_TO_SHM", strlen("WRITE_TO_SHM")) == 0)
+        else if (strcmp(contents, "WRITE_TO_SHM") == 0)
         {
-            
+
             // Handle WRITE_TO_SHM command
             write_shm(reqPipe, respPipe);
         }
-        else if(strncmp("MAP_FILE", contents, strlen("MAP_FILE")) == 0){
+        else if (strncmp("MAP_FILE", contents, strlen("MAP_FILE")) == 0)
+        {
             char size = 0;
             read(reqPipe, &size, 1);
-            char* file = (char*)calloc(size, sizeof(char));
+            char *file = (char *)calloc(size, sizeof(char));
             int fd = open(file, O_RDONLY);
             int size1 = lseek(fd, 0, SEEK_END);
             mmap(NULL, size1, PROT_READ, MAP_PRIVATE, fd, 0);
 
             write(respPipe, "MAP_FILE", strlen("MAP_FILE"));
             write(respPipe, "SUCCESS", strlen("SUCCESS"));
-            
         }
         else if (strncmp("EXIT", contents, dim1) == 0)
         {
