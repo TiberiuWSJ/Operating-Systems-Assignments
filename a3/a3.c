@@ -120,7 +120,7 @@ void pipeMapFile(int reqPipe, int respPipe)
         write(respPipe, &dimFile, 1);
         write(respPipe, "MAP_FILE", strlen("MAP_FILE"));
 
-        char dimError = 7;
+        char dimError = 5;
         write(respPipe, &dimError, 1);
         write(respPipe, "ERROR", strlen("ERROR"));
     }
@@ -203,22 +203,22 @@ int main(int argc, char **argv)
 
             pipeVariant(respPipe);
         }
-        if (strcmp(compar, "CREATE_SHM") == 0)
+        else if (strcmp(compar, "CREATE_SHM") == 0)
         {
             pipeShm(reqPipe, respPipe);
         }
 
-        if (strcmp(compar, "WRITE_TO_SHM") == 0)
+        else if (strcmp(compar, "WRITE_TO_SHM") == 0)
         {
             pipeWriteShm(reqPipe, respPipe);
         }
 
-        if (strcmp(compar, "MAP_FILE") == 0)
+        else if (strcmp(compar, "MAP_FILE") == 0)
         {
             pipeMapFile(reqPipe, respPipe);
         }
 
-        if (strcmp(compar, "EXIT") == 0)
+        else //if (strcmp(compar, "EXIT") == 0)
         {
             pipeExit(reqPipe, respPipe);
             break;
